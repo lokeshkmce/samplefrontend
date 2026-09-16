@@ -1,3 +1,10 @@
+// ===== AWS COGNITO CONFIGURATION =====
+const awsConfig = {
+  region: 'ap-southeast-1',              // Singapore
+  userPoolId: 'ap-southeast-1_WYFK7E7to',
+  clientId: '4p5cb41uasdnfdhh53ogg3629j',
+};
+
 // ===== NAVBAR SCROLL =====
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
