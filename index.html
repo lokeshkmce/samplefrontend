@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
 </head>
 <body>
 
@@ -35,7 +36,17 @@
         <li><a href="#contact" class="nav-link">Contact</a></li>
       </ul>
       <div class="nav-actions">
-        <a href="#contact" class="btn btn-primary">Get Started</a>
+        <!-- Logged-out state -->
+        <div id="auth-logged-out" class="auth-nav-btns">
+          <button class="btn btn-outline" id="open-login-btn">Login</button>
+          <button class="btn btn-primary" id="open-register-btn">Register</button>
+        </div>
+        <!-- Logged-in state -->
+        <div id="auth-logged-in" class="auth-user-nav" style="display:none;">
+          <div class="user-avatar" id="user-avatar-nav">U</div>
+          <span class="user-name-nav" id="user-name-nav">User</span>
+          <button class="btn btn-outline btn-sm" id="logout-btn">Logout</button>
+        </div>
         <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -315,6 +326,94 @@
   </footer>
 
   <button class="btt" id="btt" aria-label="Back to top">↑</button>
+
+  <!-- ===== MODAL OVERLAY ===== -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+
+  <!-- ===== REGISTER MODAL ===== -->
+  <div class="auth-modal" id="register-modal" role="dialog" aria-modal="true" aria-labelledby="register-title">
+    <div class="modal-header">
+      <div class="modal-logo">
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#mlg1)"/><path d="M8 16L14 10L20 16L14 22Z" fill="white"/><path d="M16 8L24 16L16 24" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/><defs><linearGradient id="mlg1" x1="0" y1="0" x2="32" y2="32"><stop offset="0%" stop-color="#2563EB"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient></defs></svg>
+      </div>
+      <h2 id="register-title">Create Account</h2>
+      <p>Join NexaCore Technologies today</p>
+      <button class="modal-close" id="close-register" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: Register Form -->
+      <div id="register-step-1">
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <div class="input-wrap"><span class="input-icon">👤</span><input type="text" id="reg-name" placeholder="John Doe" autocomplete="name" /></div>
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email Address</label>
+          <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" id="reg-email" placeholder="john@company.com" autocomplete="email" /></div>
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <div class="input-wrap"><span class="input-icon">🔒</span><input type="password" id="reg-password" placeholder="Min 8 chars, 1 uppercase, 1 number" autocomplete="new-password" /><button class="toggle-pw" data-target="reg-password" type="button">👁</button></div>
+          <div class="pw-strength" id="pw-strength"><div class="pw-bar" id="pw-bar"></div></div>
+          <span class="pw-label" id="pw-label"></span>
+        </div>
+        <div class="auth-error" id="reg-error"></div>
+        <button class="btn btn-primary btn-full" id="register-submit-btn">Create Account</button>
+        <p class="auth-switch">Already have an account? <a href="#" id="switch-to-login-from-reg">Login</a></p>
+      </div>
+      <!-- Step 2: OTP Verification -->
+      <div id="register-step-2" style="display:none;">
+        <div class="otp-info">
+          <div class="otp-icon">📧</div>
+          <h3>Verify Your Email</h3>
+          <p>We sent a 6-digit code to <strong id="otp-email-display"></strong></p>
+        </div>
+        <div class="form-group">
+          <label>Enter OTP Code</label>
+          <div class="otp-inputs" id="otp-inputs">
+            <input class="otp-box" maxlength="1" type="text" inputmode="numeric" />
+            <input class="otp-box" maxlength="1" type="text" inputmode="numeric" />
+            <input class="otp-box" maxlength="1" type="text" inputmode="numeric" />
+            <input class="otp-box" maxlength="1" type="text" inputmode="numeric" />
+            <input class="otp-box" maxlength="1" type="text" inputmode="numeric" />
+            <input class="otp-box" maxlength="1" type="text" inputmode="numeric" />
+          </div>
+        </div>
+        <div class="auth-error" id="otp-error"></div>
+        <button class="btn btn-primary btn-full" id="otp-verify-btn">Verify & Activate</button>
+        <p class="auth-switch">Didn't receive it? <a href="#" id="resend-otp-btn">Resend Code</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOGIN MODAL ===== -->
+  <div class="auth-modal" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal-header">
+      <div class="modal-logo">
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="url(#mlg2)"/><path d="M8 16L14 10L20 16L14 22Z" fill="white"/><path d="M16 8L24 16L16 24" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/><defs><linearGradient id="mlg2" x1="0" y1="0" x2="32" y2="32"><stop offset="0%" stop-color="#2563EB"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient></defs></svg>
+      </div>
+      <h2 id="login-title">Welcome Back</h2>
+      <p>Sign in to your NexaCore account</p>
+      <button class="modal-close" id="close-login" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="login-email">Email Address</label>
+        <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" id="login-email" placeholder="john@company.com" autocomplete="email" /></div>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <div class="input-wrap"><span class="input-icon">🔒</span><input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password" /><button class="toggle-pw" data-target="login-password" type="button">👁</button></div>
+      </div>
+      <div class="auth-error" id="login-error"></div>
+      <button class="btn btn-primary btn-full" id="login-submit-btn">Sign In</button>
+      <p class="auth-switch">Don't have an account? <a href="#" id="switch-to-register-from-login">Register</a></p>
+    </div>
+  </div>
+
+  <!-- ===== SUCCESS TOAST ===== -->
+  <div class="auth-toast" id="auth-toast"></div>
+
   <script src="script.js"></script>
 </body>
 </html>
